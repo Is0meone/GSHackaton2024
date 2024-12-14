@@ -71,7 +71,7 @@ def analyze():
             filtered_alerts, key=lambda alert: ['Low', 'Medium', 'High', 'Critical'].index(alert.get('risk'))
         )
 
-        return jsonify({"alerts": sorted_alerts})
+        return jsonify({"alerts": sorted_alerts, "grok": send_to_llama(sorted_alerts)})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
