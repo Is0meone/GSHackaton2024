@@ -95,6 +95,26 @@
             transform: scale(1.05);
         }
 
+        .loader {
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
         #results {
             background-color: #f4f4f4;
             padding: 20px;
@@ -153,6 +173,7 @@
         <input type="url" id="base_url" name="base_url" required placeholder="Enter Base URL">
 
         <button type="button" onclick="analyze()">Analyze</button>
+        <div class="loader" id="loader"></div>
     </form>
 
     <div id="results"></div>
@@ -161,6 +182,12 @@
         function analyze() {
             const openapi_url = document.getElementById('openapi_url').value;
             const base_url = document.getElementById('base_url').value;
+            const loader = document.getElementById('loader');
+            const resultsDiv = document.getElementById('results');
+
+            // Clear previous results and show loader
+            resultsDiv.innerText = '';
+            loader.style.display = 'block';
 
             fetch('/analyze', {
                 method: 'POST',
@@ -171,7 +198,8 @@
             })
                 .then(response => response.json())
                 .then(data => {
-                    const resultsDiv = document.getElementById('results');
+                    loader.style.display = 'none'; // Hide loader
+
                     if (data.error) {
                         resultsDiv.classList.add('error');
                         resultsDiv.classList.remove('success');
@@ -183,7 +211,8 @@
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    const resultsDiv = document.getElementById('results');
+                    loader.style.display = 'none'; // Hide loader
+
                     resultsDiv.classList.add('error');
                     resultsDiv.classList.remove('success');
                     resultsDiv.innerText = 'An error occurred. Please try again later.';
