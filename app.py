@@ -71,7 +71,21 @@ def analyze():
             filtered_alerts, key=lambda alert: ['Low', 'Medium', 'High', 'Critical'].index(alert.get('risk'))
         )
 
-        return jsonify({"alerts": sorted_alerts, "grok": send_to_llama(sorted_alerts)})
+
+        filtered_for_grok = [
+            {
+            "method": alert.get("method"),
+            "confidence": alert.get("confidence"),
+            "description": alert.get("description"),
+            "inputVector": alert.get("inputVector"),
+            "attack": alert.get("attack"),
+            "risk": alert.get("risk"),
+            "name": alert.get("name")
+            }
+            for alert in sorted_alerts
+        ]
+
+        return jsonify({"alerts": sorted_alerts, "grok": send_to_llama(filtered_for_grok)})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -80,14 +94,14 @@ def analyze():
 def send_to_llama(alert_list):
 
     if not alert_list:
-        return jsonify({"error": "."}), 400
+        raise ValueError("No alerts to send to LLaMA.")
 
     try:
         data = {
             "model": "llama3-8b-8192",
             "messages": [{
                 "role": "user",
-                "content": f"You are world known cybersecurity expert. Those are security scan results of some application in Goldman Sachs application network, made with ZAP scanner. In first word of your anwser please assess its security level in range from 0 to 100. Then point key risks from a bussiness point of view. Here are scan results: {alert_list}"
+                "content": f"You are world known cybersecurity expert. Those are security scan results of some application in Goldman Sachs application network, made with ZAP scanner. It is CRUCIAL for you to place assessed security level in range from 0 to 100 in the first word of your anwser. Then point key risks from a bussiness point of view. Here are scan results: {alert_list}"
             }]
         }
 
@@ -99,12 +113,11 @@ def send_to_llama(alert_list):
 
 
         if response.status_code != 200:
-            return jsonify({"error": "Failed to send data to LLaMA."}), 500
+            raise ValueError(f"Failed to send data to LLaMA: {response.text}")
 
         return response.json()['choices'][0]['message']['content']
 
     except Exception as e:
-        return {"error": str(e)}
-
+        raise ValueError(f"Failed to send data to LLaMA: {str(e)}")
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
