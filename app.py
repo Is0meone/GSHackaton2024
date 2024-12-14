@@ -17,10 +17,12 @@ def index():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
+    print("Dzialamy")
     data = request.get_json()
     openapi_url = data.get('openapi_url')
     base_url = data.get('base_url')
-
+    print(openapi_url)
+    print(base_url)
     if not openapi_url or not base_url:
         return jsonify({"error": "Both 'openapi_url' and 'base_url' are required."}), 400
 
@@ -36,7 +38,7 @@ def analyze():
 
         # Uruchomienie skanowania
         zap.ascan.scan(url=base_url)
-        time.sleep(100)  # Poczekaj na zakończenie skanowania
+        time.sleep(10)  # Poczekaj na zakończenie skanowania
 
         # Pobranie alertów
         alerts = zap.core.alerts()
