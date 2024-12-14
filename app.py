@@ -1,19 +1,14 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify
 from zapv2 import ZAPv2
 import requests
 import time
 import json
+from collections import defaultdict
 
-app = Flask(__name__, template_folder="templates", static_folder="static")
+app = Flask(__name__)
 
 # Konfiguracja połączenia z ZAP
 zap = ZAPv2(proxies={"http": "http://127.0.0.1:7071", "https": "http://127.0.0.1:7071"})
-
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
@@ -41,11 +36,16 @@ def analyze():
         # Pobranie alertów
         alerts = zap.core.alerts()
 
-        return jsonify({"alerts": alerts})
+        # Grupowanie alertów według pola 'risk'
+        grouped_alerts = defaultdict(list)
+        for alert in alerts:
+            risk_level = alert.get('risk', 'Unknown')
+            grouped_alerts[risk_level].append(alert)
+
+        return jsonify({"grouped_alerts": dict(grouped_alerts)})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/send-to-llama', methods=['POST'])
 def send_to_llama():
@@ -72,7 +72,6 @@ def send_to_llama():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
