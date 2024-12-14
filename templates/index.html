@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flask ZAP Analyzer</title>
+    <title>App security assessment</title>
     <link rel="stylesheet" href="/static/style.css">
     <style>
         /* General Reset */
@@ -75,6 +75,11 @@
             background-color: #fff;
             box-shadow: 0 0 8px rgba(63, 128, 243, 0.6);
             outline: none;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 20px;
         }
 
         button {
@@ -169,8 +174,13 @@
         <label for="openapi_url">OpenAPI URL:</label>
         <input type="url" id="openapi_url" name="openapi_url" required placeholder="Enter OpenAPI URL">
 
-        <label for="base_url">Base URL:</label>
+        <label for="base_url">Target URL:</label>
         <input type="url" id="base_url" name="base_url" required placeholder="Enter Base URL">
+
+        
+        <label for="slider">Analysing time: <output id="sliderOutput">10</output>s</label>
+        
+        <input type="range" id="slider" name="slider" min="10" max="120" value="10" oninput="document.getElementById('sliderOutput').value = this.value">
 
         <button type="button" onclick="analyze()">Analyze</button>
         <div class="loader" id="loader"></div>
@@ -182,6 +192,7 @@
         function analyze() {
             const openapi_url = document.getElementById('openapi_url').value;
             const base_url = document.getElementById('base_url').value;
+            const slider = document.getElementById('slider').value;
             const loader = document.getElementById('loader');
             const resultsDiv = document.getElementById('results');
 
@@ -194,7 +205,7 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ openapi_url, base_url })
+                body: JSON.stringify({ openapi_url, base_url, slider })
             })
                 .then(response => response.json())
                 .then(data => {

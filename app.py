@@ -3,28 +3,37 @@ from zapv2 import ZAPv2
 import requests
 import time
 import json
-
+import dotenv
+import os
+dotenv.load_dotenv()
+GROK_API = os.getenv("GROK_API")
 app = Flask(__name__, template_folder="templates")
 
+
+ZAP_IP = "http://127.0.0.1:8090"
+
 # Konfiguracja połączenia z ZAP
-zap = ZAPv2(proxies={"http": "http://127.0.0.1:7071", "https": "http://127.0.0.1:7071"})
+zap = ZAPv2(proxies={"http": "http://127.0.0.1:8090", "https": "http://127.0.0.1:8090"})
 
 @app.route('/')
 def index():
-    return jsonify({"message": "Welcome to Flask ZAP Analyzer. Use /analyze or /send-to-llama endpoints."})
+    return render_template('index.html')
 
-@app.route('/analyze', methods=['POST'])
+@app.route('/', methods=['POST'])
 def analyze():
     data = request.get_json()
     openapi_url = data.get('openapi_url')
     base_url = data.get('base_url')
+    time_sleep = int(data.get('slider'))
+    print(openapi_url)
+    print(base_url)
 
     if not openapi_url or not base_url:
         return jsonify({"error": "Both 'openapi_url' and 'base_url' are required."}), 400
 
     try:
         # Import OpenAPI URL
-        final_url = f"http://localhost:7071/JSON/openapi/action/importUrl/?url={openapi_url}&hostOverride=&contextId=&userId="
+        final_url = f"http://localhost:8090/JSON/openapi/action/importUrl/?url={openapi_url}&hostOverride=&contextId=&userId="
         response = requests.get(final_url)
 
         if response.status_code != 200:
@@ -48,48 +57,42 @@ def analyze():
 
         # Uruchomienie skanowania
         zap.ascan.scan(url=base_url)
-        time.sleep(100)  # Poczekaj na zakończenie skanowania
+        time.sleep(time_sleep)  # Poczekaj na zakończenie skanowania
 
         # Pobranie a lertów
         alerts = zap.core.alerts()
 
-        # Filtrowanie alertów - tylko te z ryzykiem >= "Medium"
-        filtered_alerts = [
-            alert for alert in alerts if alert.get('risk') in ['Medium', 'High', 'Critical']
-        ]
-
-        # Sortowanie alertów po ryzyku ("risk")
-        sorted_alerts = sorted(
-            filtered_alerts, key=lambda alert: ['Low', 'Medium', 'High', 'Critical'].index(alert.get('risk'))
-        )
-
-        return jsonify({"alerts": sorted_alerts})
+        return jsonify({"alerts": alerts, "grok": send_to_llama(alerts)})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/send-to-llama', methods=['POST'])
-def send_to_llama():
-    data = request.get_json()
-    prompt = data.get('prompt')
-    alerts = data.get('alerts')
 
-    if not prompt or not alerts:
-        return jsonify({"error": "Both 'prompt' and 'alerts' are required."}), 400
+def send_to_llama(alert_list):
+
+    if not alert_list:
+        return jsonify({"error": "."}), 400
 
     try:
-        llama_url = "http://localhost:8000/predict"  # Zakładamy, że model działa na porcie 8000
-
-        payload = {
-            "prompt": f"{prompt}\nAlerts:\n{json.dumps(alerts, indent=2)}"
+        data = {
+            "model": "llama3-8b-8192",
+            "messages": [{
+                "role": "user",
+                "content": f"You are world known cybersecurity expert. Those are security scan results of some application in Goldman Sachs application network, made with ZAP scanner. In first word of your anwser please assess its security level in range from 0 to 100. Then point key risks from a bussiness point of view. Here are scan results: {alert_list}"
+            }]
         }
 
-        llama_response = requests.post(llama_url, json=payload)
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {GROK_API}"
+        }
+        response = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=data)
 
-        if llama_response.status_code != 200:
+
+        if response.status_code != 200:
             return jsonify({"error": "Failed to send data to LLaMA."}), 500
 
-        return jsonify(llama_response.json())
+        return jsonify(response.json()['choices'][0]['message']['content'])
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
