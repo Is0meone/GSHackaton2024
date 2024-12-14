@@ -19,7 +19,7 @@ zap = ZAPv2(proxies={"http": "http://127.0.0.1:8090", "https": "http://127.0.0.1
 def index():
     return render_template('index.html')
 
-@app.route('/', methods=['POST'])
+@app.route('/analyze', methods=['POST'])
 def analyze():
     data = request.get_json()
     openapi_url = data.get('openapi_url')
