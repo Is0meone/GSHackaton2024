@@ -50,7 +50,7 @@ def analyze():
         zap.ascan.scan(url=base_url)
         time.sleep(100)  # Poczekaj na zakończenie skanowania
 
-        # Pobranie alertów
+        # Pobranie a lertów
         alerts = zap.core.alerts()
 
         # Filtrowanie alertów - tylko te z ryzykiem >= "Medium"
