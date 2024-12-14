@@ -4,16 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>App security assessment</title>
+    <title>ASA tool</title>
     <link rel="stylesheet" href="/static/style.css">
     <style>
         /* General Reset */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #6a11cb, #2575fc);
@@ -163,12 +157,64 @@
                 font-size: 0.9rem;
             }
         }
+
+        .alert {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        /* .alert:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        } */
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 
 <body>
 
-    <h1>Flask ZAP Analyzer</h1>
+    <h1>Application Security Assessment tool</h1>
 
     <form id="analyzeForm">
         <label for="openapi_url">OpenAPI URL:</label>
@@ -177,60 +223,112 @@
         <label for="base_url">Target URL:</label>
         <input type="url" id="base_url" name="base_url" required placeholder="Enter Base URL">
 
-        
-        <label for="slider">Analysing time: <output id="sliderOutput">10</output>s</label>
-        
+        <label for="slider">Evaluation time: <output id="sliderOutput">10</output> seconds</label>
         <input type="range" id="slider" name="slider" min="10" max="120" value="10" oninput="document.getElementById('sliderOutput').value = this.value">
+
 
         <button type="button" onclick="analyze()">Analyze</button>
         <div class="loader" id="loader"></div>
     </form>
 
-    <div id="results"></div>
+        <div id="exec_summary"></div>
 
-    <script>
-        function analyze() {
-            const openapi_url = document.getElementById('openapi_url').value;
-            const base_url = document.getElementById('base_url').value;
-            const slider = document.getElementById('slider').value;
-            const loader = document.getElementById('loader');
-            const resultsDiv = document.getElementById('results');
+        <div id="results" style="display: none;"></div>
 
-            // Clear previous results and show loader
-            resultsDiv.innerText = '';
-            loader.style.display = 'block';
-
-            fetch('/analyze', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ openapi_url, base_url, slider })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    loader.style.display = 'none'; // Hide loader
-
-                    if (data.error) {
+        <script>
+            function analyze() {
+                const openapi_url = document.getElementById('openapi_url').value;
+                const base_url = document.getElementById('base_url').value;
+                const slider = document.getElementById('slider').value;
+                const loader = document.getElementById('loader');
+                const resultsDiv = document.getElementById('results');
+    
+                // Clear previous results and show loader
+                resultsDiv.innerHTML = '';
+                loader.style.display = 'block';
+    
+                fetch('/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ openapi_url, base_url, slider })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        loader.style.display = 'none'; // Hide loader
+                        resultsDiv.style.display = 'block'; // Show results
+    
+                        if (data.error) {
+                            resultsDiv.classList.add('error');
+                            resultsDiv.classList.remove('success');
+                            resultsDiv.innerText = data.error;
+                        } else {
+                            resultsDiv.classList.add('success');
+                            resultsDiv.classList.remove('error');
+                            displayResults(data);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        loader.style.display = 'none'; // Hide loader
                         resultsDiv.classList.add('error');
                         resultsDiv.classList.remove('success');
-                    } else {
-                        resultsDiv.classList.add('success');
-                        resultsDiv.classList.remove('error');
-                    }
-                    resultsDiv.innerText = JSON.stringify(data, null, 2);
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    loader.style.display = 'none'; // Hide loader
+                        resultsDiv.innerText = 'An error occurred. Please try again later.';
+                    });
+            }
+    
+            function displayResults(data) {
+                const resultsDiv = document.getElementById('results');
+                const execSummaryDiv = document.getElementById('exec_summary');
+                
+                // Example executive summary data
 
-                    resultsDiv.classList.add('error');
-                    resultsDiv.classList.remove('success');
-                    resultsDiv.innerText = 'An error occurred. Please try again later.';
+                // Create executive summary box
+                execSummaryDiv.innerHTML = `
+                    <div class="alert">
+                        <strong>Executive Summary</strong>
+                        <p><strong>Total Alerts:</strong> ${data.exec_summary.total_alerts}</p>
+                        <p><strong>Total Critical Risk:</strong> ${data.exec_summary.total_critical}</p>
+                        <p><strong>Total High Risk:</strong> ${data.exec_summary.total_high}</p>
+                        <p><strong>Total Medium Risk:</strong> ${data.exec_summary.total_medium}</p>
+                        <p>${data.exec_summary.grok_description}</p>
+                    </div>
+                `;
+
+                data.alerts.forEach((alert, index) => {
+                    const alertDiv = document.createElement('div');
+                    alertDiv.classList.add('alert');
+                    alertDiv.innerHTML = `
+                        <div class="alert-summary" onclick="toggleModal(${index})">
+                            <strong>${alert.name}</strong> - ${alert.risk} risk
+                            <p>${alert.description}</p>
+                            <p><strong>Confidence</strong>: ${alert.confidence}</p>
+                        </div>
+                        <div class="modal" id="modal-${index}">
+                            <div class="modal-content">
+                                <span class="close" onclick="toggleModal(${index})">&times;</span>
+                                <h2>${alert.name}</h2>
+                                <p><strong>Risk:</strong> ${alert.risk}</p>
+                                <p><strong>Description:</strong> ${alert.description}</p>
+                                <p><strong>Confidence:</strong> ${alert.confidence}</p>
+                                <p><strong>Other:</strong> ${alert.other}</p>
+                                <p><strong>Method:</strong> ${alert.method}</p>
+                                <p><strong>Attack:</strong> ${alert.attack}</p>
+                                <p><strong>Solution:</strong> ${alert.solution}</p>
+                            </div>
+                        </div>
+                    `;
+                    resultsDiv.appendChild(alertDiv);
                 });
-        }
-    </script>
-
-</body>
-
-</html>
+            }
+    
+            function toggleModal(index) {
+                const modal = document.getElementById(`modal-${index}`);
+                modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
+            }
+        </script>
+    
+    </body>
+    
+    </html>
