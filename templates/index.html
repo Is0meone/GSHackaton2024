@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask ZAP Analyzer</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Welcome to Flask ZAP Analyzer</h1>
+    <form id="analyzeForm">
+        <label for="openapi_url">OpenAPI URL:</label><br>
+        <input type="url" id="openapi_url" name="openapi_url" required><br><br>
+        <label for="base_url">Base URL:</label><br>
+        <input type="url" id="base_url" name="base_url" required><br><br>
+        <button type="button" onclick="analyze()">Analyze</button>
+    </form>
+    <div id="results"></div>
+    <script>
+        function analyze() {
+            const openapi_url = document.getElementById('openapi_url').value;
+            const base_url = document.getElementById('base_url').value;
+
+            fetch('/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ openapi_url, base_url })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('results').innerText = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+</body>
+</html>
