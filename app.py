@@ -63,7 +63,7 @@ def analyze():
         alerts = zap.core.alerts()
         # Filtrowanie alertów - tylko te z ryzykiem >= "Medium"
         filtered_alerts = [
-            alert for alert in alerts if alert.get('risk') in ['Medium', 'High', 'Critical']
+            alert for alert in alerts if alert.get('risk') in ['Critical', 'High', 'Medium']
         ]
 
         # Sortowanie alertów po ryzyku ("risk")
