@@ -1,8 +1,15 @@
+import os
 from flask import Flask, request, jsonify, render_template
 from zapv2 import ZAPv2
 import requests
 import time
 import json
+import dotenv
+
+
+
+dotenv.load_dotenv()
+GROK_API = os.getenv("GROK_API")
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
@@ -59,18 +66,26 @@ def send_to_llama():
         return jsonify({"error": "Both 'prompt' and 'alerts' are required."}), 400
 
     try:
-        llama_url = "http://localhost:8000/predict"  # Zakładamy, że model działa na porcie 8000
+        
 
-        payload = {
-            "prompt": f"{prompt}\nAlerts:\n{json.dumps(alerts, indent=2)}"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {GROK_API}"
         }
+        data = {
+            "model": "llama3-8b-8192",
+            "messages": [{
+                "role": "user",
+                "content": f"You are world known cybersecurity expert. Sort those vulnerabilities by its relevance, impact and risk combined. For comparison use fields 'confidence', 'risk' and 'description'. Return sorted list of vulnerabilities. Formulate your respond in HTML. DATA:  {alert_list}"
+            }]
+        }
+        response = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=data)
 
-        llama_response = requests.post(llama_url, json=payload)
 
-        if llama_response.status_code != 200:
+        if response.status_code != 200:
             return jsonify({"error": "Failed to send data to LLaMA."}), 500
 
-        return jsonify(llama_response.json())
+        return jsonify(response.json())
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
