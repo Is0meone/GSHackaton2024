@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_file
 from zapv2 import ZAPv2
 import requests
 import time
@@ -6,7 +6,7 @@ import json
 import dotenv
 import os
 dotenv.load_dotenv()
-GROK_API = os.getenv("GROK_API")
+GROK_API = "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"
 app = Flask(__name__, template_folder="templates")
 
 
@@ -71,14 +71,9 @@ def analyze():
             filtered_alerts, key=lambda alert: ['Low', 'Medium', 'High', 'Critical'].index(alert.get('risk'))
         )
         # Filtrowanie alertów - tylko te z ryzykiem >= "Medium"
-        filtered_alerts = [
-            alert for alert in alerts if alert.get('risk') in ['Critical', 'High', 'Medium']
-        ]
-
-        # Sortowanie alertów po ryzyku ("risk")
-        sorted_alerts = sorted(
-            filtered_alerts, key=lambda alert: ['Low', 'Medium', 'High', 'Critical'].index(alert.get('risk'))
-        )
+        alerts_file = "alerts.json"
+        with open(alerts_file, 'w') as f:
+            json.dump({"alerts": sorted_alerts}, f, indent=4)
 
         # Sumowanie alertów według ryzyka
         risk_summary = {
@@ -115,6 +110,17 @@ def analyze():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/download_alerts', methods=['GET'])
+def download_alerts():
+    try:
+        alerts_file = "alerts.json"
+        if os.path.exists(alerts_file):
+            return send_file(alerts_file, as_attachment=True)
+        else:
+            return jsonify({"error": "Alerts file not found."}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
 
 def send_to_llama(alert_list):
 

@@ -228,6 +228,7 @@
 
 
         <button type="button" onclick="analyze()">Analyze</button>
+        <button type="button" id="downloadButton" style="display: none;" onclick="downloadAlerts()">Download Alerts</button>
         <div class="loader" id="loader"></div>
     </form>
 
@@ -242,10 +243,12 @@
                 const slider = document.getElementById('slider').value;
                 const loader = document.getElementById('loader');
                 const resultsDiv = document.getElementById('results');
-    
+                const downloadButton = document.getElementById('downloadButton');
+
                 // Clear previous results and show loader
                 resultsDiv.innerHTML = '';
-                loader.style.display = 'block';
+                downloadButton.style.display = 'none';
+            loader.style.display = 'block';
     
                 fetch('/analyze', {
                     method: 'POST',
@@ -267,7 +270,8 @@
                             resultsDiv.classList.add('success');
                             resultsDiv.classList.remove('error');
                             displayResults(data);
-                        }
+                            downloadButton.style.display = 'block';
+                    }
                     })
                     .catch(error => {
                         console.error('Error:', error);
@@ -327,7 +331,10 @@
                 const modal = document.getElementById(`modal-${index}`);
                 modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
             }
-        </script>
+            function downloadAlerts() {
+            window.location.href = '/download_alerts';
+        }
+    </script>
     
     </body>
     
