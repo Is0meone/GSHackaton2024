@@ -61,8 +61,17 @@ def analyze():
 
         # Pobranie a lertów
         alerts = zap.core.alerts()
+        # Filtrowanie alertów - tylko te z ryzykiem >= "Medium"
+        filtered_alerts = [
+            alert for alert in alerts if alert.get('risk') in ['Medium', 'High', 'Critical']
+        ]
 
-        return jsonify({"alerts": alerts, "grok": send_to_llama(alerts)})
+        # Sortowanie alertów po ryzyku ("risk")
+        sorted_alerts = sorted(
+            filtered_alerts, key=lambda alert: ['Low', 'Medium', 'High', 'Critical'].index(alert.get('risk'))
+        )
+
+        return jsonify({"alerts": sorted_alerts})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
