@@ -1,21 +1,162 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flask ZAP Analyzer</title>
     <link rel="stylesheet" href="/static/style.css">
+    <style>
+        /* General Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            flex-direction: column;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 30px;
+            color: #fff;
+            font-weight: 700;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        #analyzeForm {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 500px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        #analyzeForm:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        label {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            display: block;
+            color: #555;
+            font-weight: bold;
+        }
+
+        input[type="url"] {
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            color: #333;
+            background-color: #f9f9f9;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        input[type="url"]:focus {
+            border-color: #3f80f3;
+            background-color: #fff;
+            box-shadow: 0 0 8px rgba(63, 128, 243, 0.6);
+            outline: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(90deg, #6a11cb, #2575fc);
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        button:hover {
+            background: linear-gradient(90deg, #5a0fb8, #1e66d0);
+            transform: scale(1.05);
+        }
+
+        #results {
+            background-color: #f4f4f4;
+            padding: 20px;
+            margin-top: 30px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1rem;
+            color: #333;
+        }
+
+        #results.success {
+            background-color: #e7f5e3;
+            border-left: 5px solid #4caf50;
+        }
+
+        #results.error {
+            background-color: #f8d7da;
+            border-left: 5px solid #dc3545;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+
+            #analyzeForm {
+                padding: 25px;
+            }
+
+            button {
+                font-size: 1rem;
+                padding: 12px;
+            }
+
+            #results {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
 </head>
+
 <body>
-    <h1>Welcome to Flask ZAP Analyzer</h1>
+
+    <h1>Flask ZAP Analyzer</h1>
+
     <form id="analyzeForm">
-        <label for="openapi_url">OpenAPI URL:</label><br>
-        <input type="url" id="openapi_url" name="openapi_url" required><br><br>
-        <label for="base_url">Base URL:</label><br>
-        <input type="url" id="base_url" name="base_url" required><br><br>
+        <label for="openapi_url">OpenAPI URL:</label>
+        <input type="url" id="openapi_url" name="openapi_url" required placeholder="Enter OpenAPI URL">
+
+        <label for="base_url">Base URL:</label>
+        <input type="url" id="base_url" name="base_url" required placeholder="Enter Base URL">
+
         <button type="button" onclick="analyze()">Analyze</button>
     </form>
+
     <div id="results"></div>
+
     <script>
         function analyze() {
             const openapi_url = document.getElementById('openapi_url').value;
@@ -28,14 +169,28 @@
                 },
                 body: JSON.stringify({ openapi_url, base_url })
             })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('results').innerText = JSON.stringify(data, null, 2);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
+                .then(response => response.json())
+                .then(data => {
+                    const resultsDiv = document.getElementById('results');
+                    if (data.error) {
+                        resultsDiv.classList.add('error');
+                        resultsDiv.classList.remove('success');
+                    } else {
+                        resultsDiv.classList.add('success');
+                        resultsDiv.classList.remove('error');
+                    }
+                    resultsDiv.innerText = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const resultsDiv = document.getElementById('results');
+                    resultsDiv.classList.add('error');
+                    resultsDiv.classList.remove('success');
+                    resultsDiv.innerText = 'An error occurred. Please try again later.';
+                });
         }
     </script>
+
 </body>
+
 </html>
