@@ -183,6 +183,7 @@
         <input type="range" id="slider" name="slider" min="10" max="120" value="10" oninput="document.getElementById('sliderOutput').value = this.value">
 
         <button type="button" onclick="analyze()">Analyze</button>
+        <button type="button" id="downloadButton" style="display: none;" onclick="downloadAlerts()">Download Alerts</button>
         <div class="loader" id="loader"></div>
     </form>
 
@@ -195,9 +196,11 @@
             const slider = document.getElementById('slider').value;
             const loader = document.getElementById('loader');
             const resultsDiv = document.getElementById('results');
+            const downloadButton = document.getElementById('downloadButton');
 
             // Clear previous results and show loader
             resultsDiv.innerText = '';
+            downloadButton.style.display = 'none';
             loader.style.display = 'block';
 
             fetch('/analyze', {
@@ -217,6 +220,7 @@
                     } else {
                         resultsDiv.classList.add('success');
                         resultsDiv.classList.remove('error');
+                        downloadButton.style.display = 'block';
                     }
                     resultsDiv.innerText = JSON.stringify(data, null, 2);
                 })
@@ -228,6 +232,9 @@
                     resultsDiv.classList.remove('success');
                     resultsDiv.innerText = 'An error occurred. Please try again later.';
                 });
+        }
+        function downloadAlerts() {
+            window.location.href = '/download_alerts';
         }
     </script>
 

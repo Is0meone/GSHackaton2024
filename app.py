@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_file
 from zapv2 import ZAPv2
 import requests
 import time
@@ -6,7 +6,7 @@ import json
 import dotenv
 import os
 dotenv.load_dotenv()
-GROK_API = os.getenv("GROK_API")
+GROK_API = "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"
 app = Flask(__name__, template_folder="templates")
 
 
@@ -85,11 +85,26 @@ def analyze():
             for alert in sorted_alerts
         ]
 
+        alerts_file = "alerts.json"
+        with open(alerts_file, 'w') as f:
+            json.dump({"alerts": sorted_alerts}, f, indent=4)
+
         return jsonify({"alerts": sorted_alerts, "grok": send_to_llama(filtered_for_grok)})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/download_alerts', methods=['GET'])
+def download_alerts():
+    try:
+        alerts_file = "alerts.json"
+        if os.path.exists(alerts_file):
+            return send_file(alerts_file, as_attachment=True)
+        else:
+            return jsonify({"error": "Alerts file not found."}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
 
 def send_to_llama(alert_list):
 
