@@ -41,7 +41,7 @@ def analyze():
 
         # Filtrowanie alertów - tylko te z ryzykiem >= "Medium"
         filtered_alerts = [
-            alert for alert in alerts if alert.get('risk') in [ 'Critical','High', 'Medium']
+            alert for alert in alerts if alert.get('risk') in ['Medium', 'High', 'Critical']
         ]
 
         # Sortowanie alertów po ryzyku ("risk")
