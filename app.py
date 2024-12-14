@@ -11,7 +11,7 @@ zap = ZAPv2(proxies={"http": "http://127.0.0.1:7071", "https": "http://127.0.0.1
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return jsonify({"message": "Welcome to Flask ZAP Analyzer. Use /analyze or /send-to-llama endpoints."})
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
@@ -32,9 +32,23 @@ def analyze():
 
         time.sleep(5)  # Poczekaj na przetworzenie definicji
 
+        # Pobranie listy skanerów
+        scanners = zap.ascan.scanners()
+        dom_xss_ids = []
+        for scanner in scanners:
+            if "DOM XSS" in scanner['name']:
+                dom_xss_ids.append(scanner['id'])
+
+        if dom_xss_ids:
+            dom_xss_str = ",".join(dom_xss_ids)
+            print("Disabling DOM XSS scanners:", dom_xss_str)
+            zap.ascan.disable_scanners(ids=dom_xss_str)
+        else:
+            print("No DOM XSS scanners found. Skipping...")
+
         # Uruchomienie skanowania
         zap.ascan.scan(url=base_url)
-        time.sleep(10)  # Poczekaj na zakończenie skanowania
+        time.sleep(100)  # Poczekaj na zakończenie skanowania
 
         # Pobranie alertów
         alerts = zap.core.alerts()
